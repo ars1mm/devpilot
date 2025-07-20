@@ -1,0 +1,59 @@
+# Build files
+build/
+*.o
+*.so
+*.dll
+*.dylib
+*.a
+
+# Database files
+*.db
+*.sqlite
+*.sqlite3
+
+# Sensitive configuration files
+config/secrets/
+.env
+*.key
+*.pem
+credentials.json
+production_passwords.txt
+
+# Documentation files (contains sensitive schema info)
+docs/
+
+# IDE files
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Temporary files
+*.tmp
+*.temp
+*.log
+
+# CMake files
+CMakeCache.txt
+CMakeFiles/
+cmake_install.cmake
+Makefile
+
+# External dependencies (when added as submodules)
+external/tree-sitter/
+external/sqlite/
+
+# Test outputs
+test_results/
+coverage/
+
+# Package files
+*.tar.gz
+*.zip
+*.deb
+*.rpm
