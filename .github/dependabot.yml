@@ -1,0 +1,20 @@
+version: 2
+updates:
+  # GitHub Actions
+  - package-ecosystem: "github-actions"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+      day: "monday"
+      time: "08:00"
+    labels:
+      - "dependencies"
+      - "github-actions"
+    assignees:
+      - "ars1mm"
+    commit-message:
+      prefix: "ci"
+      include: "scope"
+
+  # CMake/C++ dependencies (if using vcpkg or conan)
+  # This can be extended later when package managers are added
