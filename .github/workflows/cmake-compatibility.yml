@@ -1,62 +1,68 @@
+---
 name: CMake Compatibility
 
-on:
+"on":
   push:
-    branches: [ main ]
+    branches: [main, develop]
   pull_request:
-    branches: [ main ]
+    branches: [main, develop]
   schedule:
-    # Run weekly to catch compatibility issues early
-    - cron: '0 8 * * 1'
+    - cron: '0 6 * * 1'  # Weekly Monday 6 AM UTC
 
 jobs:
   cmake-versions:
     name: CMake ${{ matrix.cmake_version }} - Ubuntu
     runs-on: ubuntu-latest
-    
+
     strategy:
       fail-fast: false
       matrix:
-        cmake_version: 
+        cmake_version:
           - "3.16"    # Minimum required version
           - "3.20"    # Popular LTS version
           - "3.25"    # Recent stable
           - "latest"  # Latest available
-    
+
     steps:
-    - name: Checkout code
-      uses: actions/checkout@v4
+      - name: Checkout code
+        uses: actions/checkout@v4
 
-    - name: Install dependencies
-      run: |
-        sudo apt-get update
-        sudo apt-get install -y build-essential libsqlite3-dev libtree-sitter-dev pkg-config
+      - name: Setup CMake ${{ matrix.cmake_version }}
+        uses: jwlawson/actions-setup-cmake@v1.14
+        with:
+          cmake-version: ${{ matrix.cmake_version }}
 
-    - name: Setup CMake ${{ matrix.cmake_version }}
-      uses: jwlawson/actions-setup-cmake@v1.14
-      with:
-        cmake-version: ${{ matrix.cmake_version }}
+      - name: Verify CMake version
+        run: cmake --version
 
-    - name: Verify CMake version
-      run: cmake --version
+      - name: Install dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y build-essential \
+            libsqlite3-dev pkg-config
+          # Try to install tree-sitter, fallback if not available
+          sudo apt-get install -y libtree-sitter-dev || \
+            echo "tree-sitter not available, will build without it"
 
-    - name: Configure with CMake ${{ matrix.cmake_version }}
-      working-directory: devpilot
-      run: |
-        cmake -B build -DCMAKE_BUILD_TYPE=Release -DBUILD_TESTS=ON
+      - name: Configure with CMake ${{ matrix.cmake_version }}
+        working-directory: devpilot
+        run: |
+          cmake -B build \
+            -DCMAKE_BUILD_TYPE=Release \
+            -DBUILD_TESTS=ON
 
-    - name: Build
-      working-directory: devpilot
-      run: cmake --build build
+      - name: Build
+        working-directory: devpilot
+        run: cmake --build build
 
-    - name: Test
-      working-directory: devpilot/build
-      run: ctest --output-on-failure
+      - name: Test
+        working-directory: devpilot/build
+        run: ctest --output-on-failure
 
   compiler-versions:
     name: ${{ matrix.compiler.name }} ${{ matrix.compiler.version }}
     runs-on: ubuntu-latest
-    
+
     strategy:
       fail-fast: false
       matrix:
@@ -93,33 +99,42 @@ jobs:
             version: "14"
             cc: clang-14
             cxx: clang++-14
-    
+
     steps:
-    - name: Checkout code
-      uses: actions/checkout@v4
+      - name: Checkout code
+        uses: actions/checkout@v4
 
-    - name: Install dependencies and compiler
-      run: |
-        sudo apt-get update
-        sudo apt-get install -y build-essential cmake libsqlite3-dev libtree-sitter-dev pkg-config
-        if [[ "${{ matrix.compiler.name }}" == "gcc" ]]; then
-          sudo apt-get install -y ${{ matrix.compiler.cxx }}
-        else
-          sudo apt-get install -y ${{ matrix.compiler.cc }} ${{ matrix.compiler.cxx }}
-        fi
+      - name: Install dependencies and compiler
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y build-essential cmake \
+            libsqlite3-dev pkg-config
+          # Try to install tree-sitter, fallback if not available
+          sudo apt-get install -y libtree-sitter-dev || \
+            echo "tree-sitter not available, will build without it"
+          if [[ "${{ matrix.compiler.name }}" == "gcc" ]]; then
+            sudo apt-get install -y ${{ matrix.compiler.cxx }}
+          else
+            sudo apt-get install -y ${{ matrix.compiler.cc }} \
+              ${{ matrix.compiler.cxx }}
+          fi
 
-    - name: Configure with ${{ matrix.compiler.name }} ${{ matrix.compiler.version }}
-      working-directory: devpilot
-      env:
-        CC: ${{ matrix.compiler.cc }}
-        CXX: ${{ matrix.compiler.cxx }}
-      run: |
-        cmake -B build -DCMAKE_BUILD_TYPE=Release -DBUILD_TESTS=ON
+      - name: >-
+          Configure with ${{ matrix.compiler.name }}
+          ${{ matrix.compiler.version }}
+        working-directory: devpilot
+        env:
+          CC: ${{ matrix.compiler.cc }}
+          CXX: ${{ matrix.compiler.cxx }}
+        run: |
+          cmake -B build \
+            -DCMAKE_BUILD_TYPE=Release \
+            -DBUILD_TESTS=ON
 
-    - name: Build
-      working-directory: devpilot
-      run: cmake --build build
+      - name: Build
+        working-directory: devpilot
+        run: cmake --build build
 
-    - name: Test
-      working-directory: devpilot/build
-      run: ctest --output-on-failure
+      - name: Test
+        working-directory: devpilot/build
+        run: ctest --output-on-failure
